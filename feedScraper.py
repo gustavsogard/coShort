@@ -88,7 +88,7 @@ class MyBot:
 
         newC = 0
 
-        # går igennem top 4 downloader med hvert link
+        # går igennem top 4 og downloader med hvert link
         for i in final:
             print(i[2])
 
