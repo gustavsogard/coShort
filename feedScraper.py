@@ -48,7 +48,7 @@ class MyBot:
             linkBox = self.driver.find_element(
                 By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[2]/p').get_attribute("innerHTML")
 
-            # før antal likes
+            # får antal likes
             likes = self.driver.find_element(
                 By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[1]/div[1]/button[1]/strong').get_attribute("innerHTML")
 
