@@ -3,6 +3,8 @@ from selenium.webdriver.common.by import By
 import time
 import requests
 
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 class MyBot:
     def __init__(self):
@@ -23,78 +25,78 @@ class MyBot:
         self.options.add_argument('--no-sandbox')
         self.options.add_argument('--log-level=3')
 
-        self.driver = webdriver.Chrome(
+        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),
             options=self.options)
 
         # åbner tiktok.com
         self.driver.get("https://tiktok.com")
 
+        time.sleep(1)
+
         # finder den første video i feed og klikker
-        searchButton = self.driver.find_element(
+        firstVideoDiv = self.driver.find_element(
             By.XPATH, '//*[@id="app"]/div[2]/div[2]/div[1]/div[1]/div/div[2]/div[1]')
-        searchButton.click()
+        firstVideoDiv.click()
 
         time.sleep(3)
 
         counter = 0
 
-        main = []
-        final = []
+        allPosts = []
+        topPosts = []
 
         # tjekker om "næste video knappen" findes
-        while counter < 10 and self.driver.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[1]/button[3]').is_displayed() == True:
+        while counter < 10:
+            if self.driver.find_element(By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[1]/button[3]').is_displayed() == True:
 
-            # får link til video
-            linkBox = self.driver.find_element(
-                By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[2]/p').get_attribute("innerHTML")
+                # får link til video
+                link = self.driver.find_element(
+                    By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[2]/p').get_attribute("innerHTML")
 
-            # får antal likes
-            likes = self.driver.find_element(
-                By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[1]/div[1]/button[1]/strong').get_attribute("innerHTML")
+                # får antal likes
+                likes = self.driver.find_element(
+                    By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[2]/div[2]/div[2]/div[1]/div[1]/button[1]/strong').get_attribute("innerHTML")
 
-            counter += 1
+                counter += 1
 
-            # likes str til float
-            if likes[-1] == 'K' or likes[-1] == 'M':
+                # likes str til float
                 if likes[-1] == 'K':
                     likes = likes.rstrip(likes[-1])
                     likes = float(likes)
                     likes *= 1000
-                else:
+                elif likes[-1] == 'M':
                     likes = likes.rstrip(likes[-1])
                     likes = float(likes)
                     likes *= 1000000
+                else:
+                    likes = float(likes)
+
+                post = [counter, likes, link]
+
+                allPosts.append(post)
+
+                # næste video
+                self.driver.find_element(
+                    By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[1]/button[3]').click()
+
+                time.sleep(0.5)
             else:
-                likes = float(likes)
-
-            post = [counter, likes, linkBox]
-
-            main.append(post)
-
-            # næste video
-            self.driver.find_element(
-                By.XPATH, '//*[@id="app"]/div[2]/div[3]/div[1]/button[3]').click()
-
-            time.sleep(0.5)
+                time.sleep(4)
 
         # sorterer array efter flest likes
-        main.sort(key=lambda x: x[1])
+        allPosts.sort(key=lambda x: x[1])
 
         # nyt array med top 4
-        final.append(main[-1])
-        final.append(main[-2])
-        final.append(main[-3])
-        final.append(main[-4])
+        for i in range(1,5):
+            topPosts.append(allPosts[-i])
 
-        newC = 0
+        counter = 0
 
         # går igennem top 4 og downloader med hvert link
-        for i in final:
-            print(i[2])
+        for i in topPosts:
+            counter += 1
 
-            newC += 1
-
-            fileName = str(newC) + '.mp4'
+            fileName = str(counter) + '.mp4'
 
             # åbner snaptik.com
             self.driver.get("https://snaptik.app/en")
@@ -108,9 +110,8 @@ class MyBot:
             searchBox.send_keys(tikLink)
 
             # laver download
-            searchButton = self.driver.find_element(
-                By.XPATH, '//*[@id="submiturl"]')
-            searchButton.click()
+            self.driver.find_element(
+                By.XPATH, '//*[@id="submiturl"]').click()
 
             time.sleep(3)
 
@@ -120,12 +121,10 @@ class MyBot:
 
             # download
             link = elems.get_attribute('href')
-            self.driver.get(link)
 
             # gemmer download som video i samme mappe
             response = requests.get(link)
             with open(fileName, "wb") as out_file:
                 out_file.write(response.content)
-
 
 MyBot()
